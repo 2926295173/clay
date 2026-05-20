@@ -4520,12 +4520,13 @@ Clay_RenderCommandArray Clay_EndLayout(float deltaTime) {
                         if (bfsMapItem->generation <= context->generation) {
                             Clay__AddHashMapItem(CLAY__INIT(Clay_ElementId){ layoutElement->id }, layoutElement);
                             int32_t firstChildSlot = context->layoutElementChildren.length;
+                            uint16_t newChildrenLength = layoutElement->children.length;
                             for (int j = 0; j < layoutElement->children.length; ++j) {
                                 Clay_LayoutElement* childElement = Clay_LayoutElementArray_GetCheckCapacity(&context->layoutElements, layoutElement->children.elements[j]);
                                 Clay_LayoutElementHashMapItem* childMapItem = Clay__GetHashMapItem(childElement->id);
                                 if (childMapItem->generation <= context->generation) {
                                     // Remove any nested transitions inside exiting trees
-                                    if (childElement->config.transition.handler) {
+                                    if (!childElement->isTextElement && childElement->config.transition.handler) {
                                         Clay__int32_tArray_Add(&elementIdsToRemoveTransitions, childElement->id);
                                     }
                                     int32_t childElementIndex = childElement - context->layoutElements.internalArray;
@@ -4537,9 +4538,14 @@ Clay_RenderCommandArray Clay_EndLayout(float deltaTime) {
                                         newChildElement->textElementData.wrappedLines.length = 0;
                                     }
                                     Clay__int32_tArray_Add(&context->layoutElementChildren, context->layoutElements.length - 1);
+                                } else {
+                                    newChildrenLength--;
                                 }
                             }
-                            layoutElement->children.elements = &context->layoutElementChildren.internalArray[firstChildSlot];
+                            layoutElement->children = CLAY__INIT(Clay__LayoutElementChildren) {
+                                .elements = &context->layoutElementChildren.internalArray[firstChildSlot],
+                                .length = newChildrenLength,
+                            };
                         }
                         bufferIndex++;
                     }
